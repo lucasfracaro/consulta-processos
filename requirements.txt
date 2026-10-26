@@ -1,0 +1,1 @@
+# Nenhuma dependência: o programa usa só a biblioteca padrão do Python 3.9+.

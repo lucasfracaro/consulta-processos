@@ -1,0 +1,13 @@
+# configuração local com chaves de API
+config.json
+.env
+# dados, relatórios e logs gerados (contêm dados pessoais)
+dados/
+relatorios/
+.cache_consultas/
+*.log
+# pacote gerado
+dist/
+__pycache__/
+*.pyc
+.venv/

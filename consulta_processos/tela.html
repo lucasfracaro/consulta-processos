@@ -1,0 +1,382 @@
+<!doctype html><html lang=pt-BR><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Consulta de processos</title>
+<style>
+:root{--bg:#f5f4ef;--fg:#1c1c1a;--mut:#6d6b64;--card:#fff;--line:#e2dfd6;--a:#2d6a4b;--a2:#24563d;--p:#a63a28;--warn:#fff4e5;--chip:#efede6}
+@media (prefers-color-scheme:dark){:root{--bg:#141412;--fg:#ecebe5;--mut:#a3a199;--card:#1e1e1b;--line:#35342f;--a:#5fb383;--a2:#72c296;--p:#e4806d;--warn:#2e2417;--chip:#2a2a26}}
+*{box-sizing:border-box} body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:860px;margin:0 auto;padding:28px 16px 40px}
+h1{font-size:26px;margin:0 0 2px} h2{font-size:18px;margin:26px 0 8px} .mut{color:var(--mut)} small{font-size:13px}
+nav{display:flex;gap:4px;margin:18px 0 4px;border-bottom:1px solid var(--line)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;padding:10px 14px;font-weight:600;color:var(--mut);cursor:pointer}
+nav button.sel{color:var(--fg);border-bottom-color:var(--a)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+label{font-weight:600;display:block;margin-bottom:6px}
+.doc{width:100%;font-size:24px;letter-spacing:.04em;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);font-variant-numeric:tabular-nums}
+.doc:focus,input:focus,select:focus{outline:none;border-color:var(--a)}
+.tipo{font-size:13px;margin-top:6px;min-height:20px} .ok{color:var(--a)} .erro{color:var(--p)}
+.opcoes{display:flex;flex-wrap:wrap;gap:8px 22px;margin:14px 0}
+.opcoes label,.chk{font-weight:400;display:flex;gap:8px;align-items:center;margin:0}
+details summary{cursor:pointer;color:var(--mut);font-size:14px}
+input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:9px;padding:9px 18px;cursor:pointer;text-decoration:none;display:inline-block}
+.prim{background:var(--a);color:#fff} .prim:hover{background:var(--a2)} button:disabled{opacity:.5;cursor:default}
+.sec{background:transparent;border:1px solid var(--line);color:var(--fg)} .perigo{color:var(--p)}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.etapa{font-size:18px;font-weight:600} .barra{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:10px 0}
+.barra i{display:block;height:100%;width:30%;background:var(--a);animation:corre 1.4s infinite ease-in-out}
+@keyframes corre{0%{margin-left:-30%}100%{margin-left:100%}}
+pre{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;max-height:260px;overflow:auto;white-space:pre-wrap;margin:10px 0 0}
+.nums{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0} .nums div{background:var(--bg);border-radius:10px;padding:8px 16px} .nums b{display:block;font-size:24px}
+ul.hist{list-style:none;padding:0;margin:0} ul.hist li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+ul.hist a{color:var(--a);font-weight:600;text-decoration:none} .hidden{display:none!important}
+footer{display:flex;justify-content:space-between;align-items:center;margin-top:24px}
+.fonte .topo{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.fonte h3{margin:0;font-size:16px} .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--chip);margin-left:6px;white-space:nowrap}
+.badge.paga{background:#f4e6c8;color:#6b4a00} .badge.pers{background:#dde7f6;color:#21436e}
+@media (prefers-color-scheme:dark){.badge.paga{background:#4a3b17;color:#f0d08a}.badge.pers{background:#1f3350;color:#a9c6ef}}
+.estado{font-size:12px;font-weight:600;white-space:nowrap} .estado.on{color:var(--a)} .estado.off{color:var(--mut)} .estado.falta{color:var(--p)}
+.traz{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0} .traz span{font-size:12px;background:var(--chip);border-radius:6px;padding:2px 8px}
+.campos{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-top:10px}
+.msg{font-size:13px;margin-top:8px;min-height:18px}
+.aviso{background:var(--warn);border-radius:8px;padding:10px 14px;font-size:14px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:13px} td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media (max-width:640px){.grade,.campos{grid-template-columns:1fr}}
+.abas-im{display:flex;gap:6px;margin:4px 0 12px} .abas-im button{background:var(--chip);border:0;border-radius:8px;padding:7px 14px;font-weight:600;color:var(--mut)}
+.abas-im button.sel{background:var(--a);color:#fff}
+.ficha{margin-top:14px;border-top:1px solid var(--line);padding-top:12px} .ficha h3{margin:0 0 8px;font-size:16px}
+.fatos{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 18px} .fatos span{display:block;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.03em}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:6px 0} .prog i{display:block;height:100%;background:var(--a)}
+</style>
+<main>
+<h1>Consulta de processos</h1>
+<div class=mut>Dossiê judicial por CPF ou CNPJ, com fontes oficiais e, se você quiser, fontes pagas.</div>
+<nav><button class=sel data-aba=consulta>Consulta</button><button data-aba=fontes>Fontes e chaves</button></nav>
+
+<!-- ======================= ABA CONSULTA ======================= -->
+<div id=aba-consulta>
+<section class=card id=form>
+  <label for=doc>CPF ou CNPJ</label>
+  <input id=doc class=doc autocomplete=off placeholder="000.000.000-00 ou 00.000.000/0000-00" autofocus>
+  <div id=tipo class=tipo></div>
+  <div class=opcoes>
+    <label><input type=checkbox id=socios checked> Incluir os sócios (CNPJ)</label>
+    <label><input type=checkbox id=conf> Só processos confirmados pelo documento</label>
+  </div>
+  <details><summary>Nome da pessoa (só se o programa não encontrar o nome sozinho)</summary>
+    <input type=text id=nome placeholder="Nome completo" style="margin-top:6px">
+  </details>
+  <div id=fontes-resumo class="mut" style="font-size:13px;margin-top:12px"></div>
+  <div class=linha style="margin-top:12px"><button class=prim id=ir disabled>Consultar</button><span id=msg class=erro></span></div>
+</section>
+
+<section class="card hidden" id=prog>
+  <div class=linha style="justify-content:space-between"><div class=etapa id=etapa>Preparando…</div><span class=mut id=tempo></span></div>
+  <div class=mut id=quem></div>
+  <div class=barra id=barra><i></i></div>
+  <div class=nums id=nums></div>
+  <div class=linha>
+    <a class="btn prim hidden" id=abrir target=_blank>Abrir relatório</a>
+    <button class="sec hidden" id=nova>Nova consulta</button>
+  </div>
+  <details style="margin-top:10px"><summary>Detalhes do que está sendo feito</summary><pre id=log></pre></details>
+</section>
+
+
+<section class=card id=imoveis>
+  <h2 style="margin-top:0">Imóveis</h2>
+  <div class=abas-im><button class=sel data-im=mat>Por matrícula e cartório</button><button data-im=carne>Pelo carnê do IPTU</button></div>
+
+  <div id=im-mat>
+    <div class=aviso><b>Somente imóveis da cidade de São Paulo (capital).</b> A busca usa as planilhas de transações
+      imobiliárias (ITBI) que a Prefeitura de São Paulo publica em dados abertos; nenhuma outra cidade, inclusive as do ABC,
+      publica dados assim. Encontra imóveis com alguma venda registrada desde 2006 e mostra endereço, SQL, áreas,
+      ano de construção, padrão, histórico de vendas e valor venal de referência. Dono atual, penhoras e hipotecas só
+      constam na matrícula emitida pelo cartório (serviço pago).</div>
+    <div class=grade>
+      <div><label for=im-matricula>Matrícula nº</label><input type=text id=im-matricula placeholder="Ex.: 32.404" inputmode=numeric></div>
+      <div><label for=im-cartorio>Cartório</label><select id=im-cartorio></select></div>
+    </div>
+    <div class=linha style="margin-top:12px"><button class=prim id=im-buscar>Buscar imóvel</button><span id=im-msg class=msg></span></div>
+  </div>
+
+  <div id=im-carne class=hidden>
+    <div class=grade>
+      <div><label for=im-cidade>Cidade</label><select id=im-cidade></select></div>
+      <div><label for=im-insc>Inscrição do carnê (SQL em São Paulo)</label><input type=text id=im-insc placeholder="Ex.: 000.000.0000-0"></div>
+    </div>
+    <div class="mut" id=im-carne-dica style="font-size:13px;margin-top:8px"></div>
+    <div class=linha style="margin-top:12px"><button class=prim id=im-carne-ir>Consultar</button><span id=im-carne-msg class=msg></span></div>
+  </div>
+
+  <div id=im-base class=mut style="font-size:13px;margin-top:12px"></div>
+  <div id=im-res></div>
+</section>
+
+<section class=card>
+  <div class=linha style="justify-content:space-between"><b>Consultas anteriores</b>
+    <button class=sec id=pasta>Abrir pasta dos relatórios</button></div>
+  <ul class=hist id=hist><li class=mut>Nenhuma ainda.</li></ul>
+</section>
+</div>
+
+<!-- ======================= ABA FONTES ======================= -->
+<div id=aba-fontes class=hidden>
+  <p class=mut>Escolha quais fontes a consulta usa e guarde as chaves de acesso. As chaves ficam só neste computador
+  (arquivo <code>config.json</code> na pasta do programa) e nunca aparecem inteiras na tela.</p>
+  <div id=lista-fontes></div>
+
+  <h2>Adicionar outra fonte (API)</h2>
+  <section class=card>
+    <p style="margin-top:0">Informe o endereço da API e a chave. O programa procura a documentação técnica da API
+    (OpenAPI/Swagger), descobre como buscar por CPF/CNPJ e como autenticar, testa com um documento e reconhece
+    sozinho os processos e seus campos. Você só confirma.</p>
+    <div class=grade>
+      <div><label for=n-nome>Nome da fonte</label><input type=text id=n-nome placeholder="Ex.: Minha API de processos"></div>
+      <div><label for=n-doc>CPF/CNPJ para o teste</label><input type=text id=n-doc placeholder="Um documento que tenha processos"></div>
+    </div>
+    <div style="margin-top:12px"><label for=n-end>Endereço da API ou da documentação</label>
+      <input type=text id=n-end placeholder="https://api.exemplo.com  ·  ou  https://api.exemplo.com/v1/processos?cpf_cnpj={documento}"></div>
+    <div style="margin-top:12px"><label for=n-chave>Chave de acesso</label><input type=password id=n-chave placeholder="Cole a chave (se a API exigir)"></div>
+    <details style="margin-top:10px"><summary>Avançado: forma de autenticação</summary>
+      <div class=grade style="margin-top:8px">
+        <select id=n-auth><option value="">Descobrir automaticamente</option><option value=bearer>Authorization: Bearer &lt;chave&gt;</option>
+          <option value=header>Cabeçalho com nome próprio</option><option value=query>Parâmetro no endereço</option></select>
+        <input type=text id=n-auth-nome placeholder="Nome do cabeçalho/parâmetro (ex.: x-api-key)">
+      </div></details>
+    <div class=aviso>Se a API for paga, o assistente pode fazer algumas chamadas de teste (até cerca de 6), que podem ser cobradas.</div>
+    <div class=linha><button class=prim id=analisar>Analisar API</button><span id=n-msg class=msg></span></div>
+    <div id=n-res class=hidden>
+      <h3 style="margin:14px 0 6px">Resultado da análise</h3>
+      <div id=n-resumo></div>
+      <div id=n-amostra></div>
+      <details><summary>Passo a passo da análise</summary><pre id=n-passos></pre></details>
+      <div class=linha style="margin-top:12px"><button class=prim id=adicionar>Adicionar esta fonte</button></div>
+    </div>
+  </section>
+
+  <div id=sugestoes></div>
+</div>
+
+<footer><span class=mut>Roda só neste computador.</span><button class=sec id=sair>Encerrar programa</button></footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const post = (url, corpo) => fetch(url, {method: "POST", headers: {"X-Consulta": "1", "Content-Type": "application/json"}, body: JSON.stringify(corpo || {})});
+
+// ---------- abas
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("sel", x === b));
+  $("aba-consulta").classList.toggle("hidden", b.dataset.aba !== "consulta");
+  $("aba-fontes").classList.toggle("hidden", b.dataset.aba !== "fontes");
+  if (b.dataset.aba === "fontes") carregarFontes(); else resumoFontes();
+});
+
+// ---------- documento: máscara e validação
+const dig = s => s.toUpperCase().replace(/[^0-9A-Z]/g, "");
+function cpfOk(c){ if(!/^\d{11}$/.test(c)||/^(\d)\1+$/.test(c)) return false;
+  for(const t of [9,10]){let s=0;for(let i=0;i<t;i++)s+=+c[i]*(t+1-i);if((s*10)%11%10!=+c[t])return false}return true}
+function cnpjOk(c){ if(!/^[0-9A-Z]{12}\d{2}$/.test(c)||/^(.)\1+$/.test(c)) return false;
+  const v=[...c.slice(0,12)].map(ch=>ch.charCodeAt(0)-48), p1=[5,4,3,2,9,8,7,6,5,4,3,2], p2=[6,...p1];
+  let d1=v.reduce((s,x,i)=>s+x*p1[i],0)%11; d1=d1<2?0:11-d1;
+  let d2=[...v,d1].reduce((s,x,i)=>s+x*p2[i],0)%11; d2=d2<2?0:11-d2; return c.slice(12)==`${d1}${d2}`}
+function mascara(c){ const pad = (c.length<=11 && /^\d*$/.test(c)) ? "###.###.###-##" : "##.###.###/####-##";
+  let out="", k=0; for(const ch of pad){ if(k>=c.length) break; if(ch==="#") out+=c[k++]; else out+=ch } return out}
+function validar(){ const c=dig($("doc").value); let t="",ok=false;
+  if(c.length===11){ok=cpfOk(c);t=ok?"✓ CPF válido":"CPF com dígito verificador inválido"}
+  else if(c.length===14){ok=cnpjOk(c);t=ok?"✓ CNPJ válido":"CNPJ com dígito verificador inválido"}
+  else if(c.length) t=c.length<11?"Continue digitando…":(c.length<14?"Continue digitando (CNPJ tem 14 caracteres)…":"Número longo demais");
+  $("tipo").textContent=t; $("tipo").className="tipo "+(ok?"ok":(t&&!t.startsWith("Continue")?"erro":"mut")); $("ir").disabled=!ok; return ok}
+$("doc").addEventListener("input",e=>{e.target.value=mascara(dig(e.target.value).slice(0,14)); validar()});
+$("doc").addEventListener("keydown",e=>{if(e.key==="Enter"&&validar())iniciar()});
+$("ir").onclick=iniciar;
+
+// ---------- consulta
+async function iniciar(){ $("msg").textContent=""; $("ir").disabled=true;
+  const r=await post("/consultar",{documento:$("doc").value,socios:$("socios").checked,confirmados:$("conf").checked,nome:$("nome").value.trim()});
+  const j=await r.json(); if(!r.ok){$("msg").textContent=j.erro;$("ir").disabled=false;return}
+  $("form").classList.add("hidden"); $("prog").classList.remove("hidden"); $("abrir").classList.add("hidden");
+  $("nova").classList.add("hidden"); $("barra").classList.remove("hidden"); $("nums").innerHTML=""; acompanhar()}
+let timer=null;
+async function acompanhar(){ clearTimeout(timer);
+  let s; try { s=await (await fetch("/status")).json(); } catch(e){ timer=setTimeout(acompanhar,3000); return }
+  if(s.ocioso) return;
+  $("etapa").textContent = s.erro ? "Não foi possível concluir" : (s.terminado ? "Consulta concluída" : "Etapa: "+s.etapa);
+  $("quem").textContent = (s.nome||"")+"  ·  "+s.documento+"  ·  "+s.processos+(s.terminado?" processo(s) encontrado(s)":" processo(s) encontrado(s) até agora");
+  $("tempo").textContent = Math.floor(s.segundos/60)+" min "+(s.segundos%60)+" s";
+  const log=$("log"), noFim = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
+  log.textContent = s.linhas.join("\n"); if(noFim) log.scrollTop = 1e9;
+  if(s.relatorio){ $("abrir").href=s.relatorio; $("abrir").classList.remove("hidden"); }
+  if(s.terminado){ $("barra").classList.add("hidden"); $("nova").classList.remove("hidden");
+    if(s.erro){ $("quem").innerHTML='<span class=erro>'+esc(s.erro)+'</span>'; }
+    else { const r=s.resultado; $("nums").innerHTML=`<div><b>${r.total}</b>processos</div><div><b>${r.reu}</b>como réu</div><div><b>${r.autor}</b>como autor</div><div><b>${r.alertas}</b>com alerta</div>`; }
+    carregarHist(); return }
+  timer=setTimeout(acompanhar,2000)}
+$("nova").onclick=()=>{ $("prog").classList.add("hidden"); $("form").classList.remove("hidden"); $("doc").value=""; validar(); $("doc").focus() };
+async function carregarHist(){ const h=await (await fetch("/historico")).json(); if(!h.length) return;
+  $("hist").innerHTML=h.map(i=>`<li><span><a href="/r/${encodeURIComponent(i.arquivo)}" target=_blank>${esc(i.nome||i.documento||i.arquivo)}</a><br><small class=mut>${esc(i.documento||"")} · ${i.total??"?"} processos${i.andamento?" · incompleta":""}</small></span><small class=mut>${esc(i.quando)}</small></li>`).join("")}
+$("pasta").onclick=()=>post("/abrir-pasta");
+$("sair").onclick=async()=>{ await post("/sair"); document.body.innerHTML='<main><h1>Programa encerrado</h1><p class=mut>Pode fechar esta aba.</p></main>'};
+
+// ---------- fontes
+async function resumoFontes(){
+  const d=await (await fetch("/fontes")).json();
+  const prontas=d.fontes.filter(f=>f.pronta).map(f=>f.nome.split(" —")[0]);
+  const faltando=d.fontes.filter(f=>f.ativa && !f.pronta);
+  $("fontes-resumo").innerHTML = "Fontes em uso: "+esc(prontas.join(", ")||"nenhuma")+
+    (faltando.length? ` · <span class=erro>${faltando.length} fonte(s) ativada(s) sem chave/configuração</span>`:"")+
+    ` · <a href="#" onclick="document.querySelector('[data-aba=fontes]').click();return false">gerenciar</a>`;
+}
+function estadoTxt(f){
+  if(!f.ativa) return '<span class="estado off">Desligada</span>';
+  if(f.pronta) return '<span class="estado on">● Em uso</span>';
+  return '<span class="estado falta">Falta '+(f.campos_extra.length?'configurar':'a chave')+'</span>';
+}
+function cartao(f){
+  const cls = f.categoria==="Paga"?"paga":(f.categoria==="Personalizada"?"pers":"");
+  const temChave = f.precisa_chave || f.chave_opcional;
+  const extras = f.campos_extra.map(x=>`<div><label style="font-weight:400;font-size:13px">${esc(x.rotulo)}</label>
+     <input type=text data-extra="${esc(x.id)}" value="${esc(f.extra[x.id]||"")}" placeholder="${esc(x.dica||"")}"></div>`).join("");
+  const teste = f.teste ? `<span class="${f.teste.ok?"ok":"erro"}">${f.teste.ok?"✓":"✖"} ${esc(f.teste.mensagem)} <span class=mut>(${esc(f.teste.quando)})</span></span>` : "";
+  return `<section class="card fonte" data-id="${esc(f.id)}">
+    <div class=topo><div><h3>${esc(f.nome)}<span class="badge ${cls}">${esc(f.categoria)}</span></h3>
+      <div class=mut style="font-size:14px;margin-top:4px">${esc(f.descricao)}</div></div>${estadoTxt(f)}</div>
+    <div class=traz>${(f.traz||[]).map(t=>`<span>${esc(t)}</span>`).join("")}</div>
+    ${f.observacao?`<div class=mut style="font-size:13px">${esc(f.observacao)}</div>`:""}
+    <label class=chk style="margin-top:10px"><input type=checkbox data-ativa ${f.ativa?"checked":""}> Usar esta fonte nas consultas</label>
+    ${temChave?`<div class=campos><input type=password data-chave placeholder="${f.chave_mascarada?"Chave salva: "+esc(f.chave_mascarada)+" — digite para trocar":(f.precisa_chave?"Cole a chave de acesso":"Chave (opcional)")}">
+      ${f.chave_mascarada?'<button class="sec perigo" data-acao=remover-chave>Apagar chave</button>':"<span></span>"}
+      ${f.link_chave?`<a class="btn sec" href="${esc(f.link_chave)}" target=_blank>${f.precisa_chave||f.chave_opcional?"Obter chave":"Site"}</a>`:"<span></span>"}</div>`:
+      (f.link_chave?`<div style="margin-top:8px"><a href="${esc(f.link_chave)}" target=_blank>${esc(f.link_chave)}</a></div>`:"")}
+    ${extras?`<div style="margin-top:10px">${extras}</div>`:""}
+    <div class=linha style="margin-top:12px"><button class=prim data-acao=salvar>Salvar</button>
+      <button class=sec data-acao=testar>Testar</button>
+      ${f.categoria==="Personalizada"?'<button class="sec perigo" data-acao=remover>Remover fonte</button>':""}</div>
+    <div class=msg data-msg>${teste}</div></section>`;
+}
+async function carregarFontes(){
+  const d=await (await fetch("/fontes")).json();
+  const grupos=[["Oficial gratuita","Fontes oficiais gratuitas"],["Paga","Fontes pagas (opcionais)"],["Personalizada","Fontes adicionadas por você"]];
+  $("lista-fontes").innerHTML = grupos.map(([cat,tit])=>{ const fs=d.fontes.filter(f=>f.categoria===cat);
+    return fs.length?`<h2>${tit}</h2>`+fs.map(cartao).join(""):""}).join("");
+  $("sugestoes").innerHTML = `<h2>Outros provedores que você pode ligar pelo assistente</h2><section class=card><div class=traz>`+
+    d.sugestoes.map(s=>`<span><a href="${esc(s.site)}" target=_blank>${esc(s.nome)}</a></span>`).join("")+
+    `</div><div class=mut style="font-size:13px">Contrate a API no site do provedor e use “Adicionar outra fonte” acima com o endereço e a chave recebidos.</div></section>`;
+  document.querySelectorAll(".fonte").forEach(card=>{
+    const id=card.dataset.id, msg=card.querySelector("[data-msg]");
+    const dadosCard=()=>{ const extra={}; card.querySelectorAll("[data-extra]").forEach(i=>extra[i.dataset.extra]=i.value);
+      return {id, ativa:card.querySelector("[data-ativa]").checked, chave:card.querySelector("[data-chave]")?.value||"", extra} };
+    card.querySelectorAll("[data-acao]").forEach(b=>b.onclick=async()=>{
+      const acao=b.dataset.acao; b.disabled=true;
+      try{
+        if(acao==="salvar"){ await post("/fontes/salvar",dadosCard()); await carregarFontes(); return }
+        if(acao==="remover-chave"){ await post("/fontes/salvar",{id,remover_chave:true}); await carregarFontes(); return }
+        if(acao==="remover"){ if(!confirm("Remover esta fonte?")) return; await post("/fontes/remover",{id}); await carregarFontes(); return }
+        if(acao==="testar"){ msg.innerHTML='<span class=mut>Salvando e testando…</span>'; await post("/fontes/salvar",dadosCard());
+          const r=await (await post("/fontes/testar",{id})).json(); await carregarFontes(); }
+      } finally { b.disabled=false }
+    });
+  });
+}
+$("analisar").onclick=async()=>{
+  $("n-msg").innerHTML='<span class=mut>Analisando a API… isso pode levar até um minuto.</span>'; $("analisar").disabled=true; $("n-res").classList.add("hidden");
+  try{
+    const r=await post("/fontes/analisar",{nome:$("n-nome").value,endereco:$("n-end").value.trim(),chave:$("n-chave").value,
+      documento:$("n-doc").value,auth_tipo:$("n-auth").value,auth_nome:$("n-auth-nome").value});
+    const j=await r.json();
+    if(!r.ok){ $("n-msg").innerHTML='<span class=erro>'+esc(j.erro)+'</span>'; return }
+    $("n-msg").innerHTML = j.total? '<span class=ok>✓ API entendida.</span>' : '<span class=erro>A API respondeu, mas nenhum processo foi reconhecido para esse documento.</span>';
+    window.__token=j.token;
+    $("n-resumo").innerHTML=`<p><b>Busca:</b> ${esc(j.metodo)} ${esc(j.endereco_final)}<br><b>Processos reconhecidos no teste:</b> ${j.total}<br>
+      <b>Campos que o programa conseguiu ler:</b> ${esc(j.campos_reconhecidos.join(", ")||"—")}</p>`;
+    $("n-amostra").innerHTML = j.amostra.length? `<table><tr><th>Número</th><th>Tribunal</th><th>Classe</th><th>Partes</th><th>Andamentos</th><th>Lado</th></tr>`+
+      j.amostra.map(a=>`<tr><td>${esc(a.numero)}</td><td>${esc(a.tribunal||"—")}</td><td>${esc(a.classe||"—")}</td><td>${a.partes}</td><td>${a.andamentos}</td><td>${esc(a.polo_do_consultado||"—")}</td></tr>`).join("")+`</table>`:"";
+    $("n-passos").textContent=j.passos.join("\n"); $("n-res").classList.remove("hidden");
+  } finally { $("analisar").disabled=false }
+};
+$("adicionar").onclick=async()=>{
+  const r=await post("/fontes/adicionar",{token:window.__token}); const j=await r.json();
+  if(!r.ok){ $("n-msg").innerHTML='<span class=erro>'+esc(j.erro)+'</span>'; return }
+  $("n-res").classList.add("hidden"); $("n-msg").innerHTML='<span class=ok>✓ Fonte adicionada e ativada.</span>';
+  ["n-nome","n-end","n-chave"].forEach(i=>$(i).value=""); carregarFontes();
+};
+
+
+// ---------- imóveis
+document.querySelectorAll(".abas-im button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".abas-im button").forEach(x=>x.classList.toggle("sel",x===b));
+  $("im-mat").classList.toggle("hidden",b.dataset.im!=="mat"); $("im-carne").classList.toggle("hidden",b.dataset.im!=="carne");
+  $("im-res").innerHTML="";
+});
+for(let i=1;i<=18;i++) $("im-cartorio").insertAdjacentHTML("beforeend",`<option value=${i}>${i}º Oficial de Registro de Imóveis de São Paulo</option>`);
+let baseTimer=null;
+async function statusBase(){
+  clearTimeout(baseTimer);
+  const b=await (await fetch("/imoveis/base")).json();
+  if(!$("im-cidade").options.length) for(const [k,v] of Object.entries(b.cidades)) $("im-cidade").insertAdjacentHTML("beforeend",`<option value=${k}>${esc(v)}</option>`);
+  dicaCidade();
+  const p=b.progresso; let t="";
+  if(p.rodando){
+    const pct=p.total?Math.round(100*(p.atual-1)/p.total):0;
+    t=`<b>Preparando a base de imóveis de São Paulo</b> (uma vez só; pode levar de 15 a 40 minutos): arquivo ${p.atual||"…"} de ${p.total||"…"} — ${esc(p.mensagem)}
+       <div class=prog><i style="width:${pct}%"></i></div>As buscas já funcionam com o que foi baixado.`;
+    baseTimer=setTimeout(statusBase,3000);
+  } else if(b.pronta){
+    t=`Base de imóveis de SP: ${b.transacoes.toLocaleString("pt-BR")} transações (${esc((b.periodo[0]||"").slice(0,4))}–${esc((b.periodo[1]||"").slice(0,4))}),
+       atualizada em ${esc(b.ultima_atualizacao||"")}. <a href="#" id=im-atualizar>Atualizar</a>`+
+       (b.com_matricula===0?` · <span class=erro>As planilhas não trouxeram a coluna de matrícula: use a busca pelo carnê (SQL).</span>`:"");
+  } else if(b.arquivos>0){
+    t=`<span class=erro>As planilhas de ITBI foram baixadas, mas o formato não foi reconhecido (a Prefeitura pode ter mudado o layout).
+       Envie o arquivo consulta.log da pasta do programa para ajuste.</span> <a href="#" id=im-atualizar>Tentar de novo</a>`;
+  } else {
+    t=`A base de imóveis de São Paulo ainda não foi baixada. <a href="#" id=im-atualizar>Baixar agora</a> (uma vez só; depois as buscas são instantâneas).`;
+  }
+  if(p.erro) t+=`<div class=erro>Último erro: ${esc(p.erro)}</div>`;
+  $("im-base").innerHTML=t;
+  const a=$("im-atualizar"); if(a) a.onclick=async e=>{e.preventDefault(); await post("/imoveis/base/atualizar"); statusBase()};
+}
+function dicaCidade(){
+  const c=$("im-cidade").value;
+  $("im-carne-dica").innerHTML = c==="sao_paulo"
+    ? "Em São Paulo o programa busca o imóvel na base de ITBI pelo SQL (número do contribuinte no carnê) e mostra a ficha completa."
+    : "Esta prefeitura não publica dados abertos de imóveis: o programa abre o portal oficial para você consultar o IPTU com a inscrição informada.";
+}
+$("im-cidade").onchange=dicaCidade;
+function mostrarFicha(r){
+  if(r.precisa_base){ statusBase(); return '<p class=mut>Baixando a base de imóveis de São Paulo pela primeira vez. Acompanhe abaixo e repita a busca quando terminar.</p>' }
+  if(!r.encontrado) return `<div class=ficha><h3>${esc(r.titulo)}</h3><p class=erro>Nenhuma transação encontrada para este imóvel nas planilhas de ITBI.</p>
+    <p class=mut>Pode ser um imóvel sem venda registrada desde 2006, recebido por herança/doação, ou a guia pode não ter informado a matrícula. Tente pelo carnê (SQL).</p>
+    <a class="btn sec" href="${r.relatorio}" target=_blank>Abrir ficha com links oficiais</a></div>`;
+  const fatos=Object.entries(r.imovel).filter(([k,v])=>v).map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
+  const ind=Object.entries(r.indicadores).map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
+  const al=r.alertas.map(a=>`<li>${esc(a)}</li>`).join("");
+  return `<div class=ficha><h3>${esc(r.titulo)}</h3><div class=fatos>${fatos}${ind}</div>
+    ${al?`<div class=aviso><b>Pontos de atenção</b><ul style="margin:4px 0 0">${al}</ul></div>`:""}
+    <div class=linha style="margin-top:10px"><a class="btn prim" href="${r.relatorio}" target=_blank>Abrir ficha completa (${r.transacoes} transações)</a></div></div>`;
+}
+$("im-buscar").onclick=async()=>{
+  $("im-msg").innerHTML='<span class=mut>Buscando…</span>'; $("im-res").innerHTML="";
+  const r=await post("/imoveis/matricula",{matricula:$("im-matricula").value,cartorio:$("im-cartorio").value}); const j=await r.json();
+  if(!r.ok){ $("im-msg").innerHTML='<span class=erro>'+esc(j.erro)+'</span>'; return }
+  $("im-msg").innerHTML=""; $("im-res").innerHTML=mostrarFicha(j);
+};
+$("im-carne-ir").onclick=async()=>{
+  $("im-carne-msg").innerHTML='<span class=mut>Buscando…</span>'; $("im-res").innerHTML="";
+  const r=await post("/imoveis/carne",{cidade:$("im-cidade").value,inscricao:$("im-insc").value}); const j=await r.json();
+  if(!r.ok){ $("im-carne-msg").innerHTML='<span class=erro>'+esc(j.erro)+'</span>'; return }
+  $("im-carne-msg").innerHTML="";
+  if(j.externo){
+    try{ await navigator.clipboard.writeText(j.inscricao) }catch(e){}
+    $("im-res").innerHTML=`<div class=ficha><h3>${esc(j.cidade)}</h3><p>A prefeitura de ${esc(j.cidade)} não publica dados abertos de imóveis,
+      então o programa não consegue buscar sozinho. Abra o portal oficial, entre na área de IPTU e informe a inscrição
+      <b>${esc(j.inscricao)}</b> (já copiada para a área de transferência).</p>
+      <a class="btn prim" href="${esc(j.portal)}" target=_blank>Abrir portal da Prefeitura de ${esc(j.cidade)}</a></div>`;
+    return }
+  $("im-res").innerHTML=mostrarFicha(j);
+};
+statusBase();
+
+carregarHist(); resumoFontes();
+fetch("/status").then(r=>r.json()).then(s=>{ if(!s.ocioso && !s.terminado){ $("form").classList.add("hidden"); $("prog").classList.remove("hidden"); acompanhar() } });
+</script></html>
